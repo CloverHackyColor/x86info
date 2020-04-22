@@ -4,3 +4,6 @@ x86info
 x86info-*.tgz
 cov-int
 tags
+.DS_Store
+*/.DS_Store
+

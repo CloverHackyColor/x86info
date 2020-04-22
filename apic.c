@@ -13,8 +13,21 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <x86info.h>
+#include "rdtsc.h"
+#include "DirectHW.h"
 
 static int fd;
+
+int read_msr(int cpu, unsigned int idx, unsigned long long *val)
+{
+  msr_t ret = { INVALID_MSR_HI, INVALID_MSR_LO };
+  unsigned long long value;
+  unsigned long msr = idx + (cpu & 0);
+//  value = rdmsr_safe(msr, val);
+  ret = rdmsr(msr); //not safe but call to DirectHW.kext
+  value = (ret.hi << 32) + ret.lo;
+  return value;
+}
 
 static int apic_msr_value(int cpu, int msr, unsigned long long *val)
 {
@@ -70,8 +83,8 @@ static unsigned int * mapping_apic_registers(unsigned long addr)
 		return NULL;
 
 	offset = PAGE_OFFSET(addr);
-
-	mapped = mmap(NULL, (APIC_REGISTER_SPACE + offset), PROT_READ, MAP_SHARED, fd, (unsigned long) addr - offset);
+//use MAP_SHARED?
+	mapped = mmap(NULL, (APIC_REGISTER_SPACE + offset), PROT_READ, MAP_PRIVATE, fd, (unsigned long) addr - offset);
 	if (mapped != MAP_FAILED)
 		return (unsigned int *) (mapped + offset);
 	else

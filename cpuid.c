@@ -15,15 +15,23 @@
 #include <x86info.h>
 
 /* returns zero on success */
-int native_cpuid(unsigned int cpunr, unsigned long long idx,
+//int native_cpuid(unsigned int cpunr, unsigned long long idx,
+void cpuid(unsigned int cpunr, unsigned long long idx,
 	unsigned int *eax, unsigned int *ebx,
 	unsigned int *ecx, unsigned int *edx)
 {
 	unsigned int a = 0, b = 0, c = 0, d = 0;
 
-	c = idx >> 32;
+	if (eax != NULL)
+		a = *eax;
+	if (ebx != NULL)
+		b = *ebx;
+	if (ecx != NULL)
+		c = *ecx;
+	if (edx != NULL)
+		d = *edx;
 
-	bind_cpu(cpunr);
+//	bind_cpu(cpunr);
 
 	asm("cpuid"
 		: "=a" (a),
@@ -41,8 +49,17 @@ int native_cpuid(unsigned int cpunr, unsigned long long idx,
 	if (edx!=NULL)
 		*edx = d;
 
-	return 0;
+//	return 0;
 }
+
+int native_cpuid(unsigned int cpunr, unsigned long long idx,
+           unsigned int *eax, unsigned int *ebx,
+           unsigned int *ecx, unsigned int *edx)
+{
+  cpuid(cpunr, idx, eax, ebx, ecx, edx);
+  return 0;
+}
+
 
 void cpuid4(unsigned int CPU_number, unsigned long long idx,
 	unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx)
@@ -71,14 +88,13 @@ unsigned int cpuid_ebx(unsigned int CPU_number, unsigned int op)
 
 void dump_raw_cpuid(int cpunum, unsigned int begin, unsigned int end)
 {
-	unsigned int i;
-	unsigned int eax, ebx, ecx, edx;
+        unsigned int i;
+        unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
 
-	/* Dump all the CPUID results in raw hex */
-	for (i = begin; i <= end; i++) {
-		ecx = 0;
-		cpuid(cpunum, i, &eax, &ebx, &ecx, &edx);
-		printf("eax in: 0x%08x, eax = %08x ebx = %08x ecx = %08x edx = %08x\n", i, eax, ebx, ecx, edx);
-	}
-	printf("\n");
+        /* Dump all the CPUID results in raw hex */
+        for (i = begin; i <= end; i++) {
+                cpuid(cpunum, i, &eax, &ebx, &ecx, &edx);
+                printf("eax in: 0x%08x, eax = %08x ebx = %08x ecx = %08x edx = %08x\n", i, eax, ebx, ecx, edx);
+        }
+        printf("\n");
 }

@@ -13,6 +13,8 @@
 #define ONLYMODEL 1
 #define ONLYMHZ 2
 
+static char nehalem_info_url[] = "http://www.intel.com/design/corei7/documentation.htm";
+
 struct cpu_name_def {
 	unsigned int model;
 	unsigned int stepping;

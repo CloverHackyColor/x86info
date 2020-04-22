@@ -34,7 +34,7 @@ static void separator(void)
 
 static void display_detailed_info(struct cpudata *cpu)
 {
-	bind_cpu(cpu->number);	/* FIXME: Eventually remove once 'gather' has all the per-cpu stuff */
+//	bind_cpu(cpu->number);	/* FIXME: Eventually remove once 'gather' has all the per-cpu stuff */
 	show_info(cpu);
 
 	if (show_cpuid) {
@@ -72,6 +72,15 @@ static void display_detailed_info(struct cpudata *cpu)
 
 	if (show_connector)
 		decode_connector(cpu->connector);
+
+	if (1 || show_urls) {
+		if (cpu->info_url != NULL)
+			printf("Info URL: %s\n", cpu->info_url);
+		if (cpu->datasheet_url != NULL)
+			printf("Datasheet: %s\n", cpu->datasheet_url);
+		if (cpu->errata_url != NULL)
+			printf("Errata: %s\n", cpu->errata_url);
+	}
 
 	/* Info that requires root access (eg, reading MSRs etc) */
 	if (user_is_root) {
@@ -145,7 +154,7 @@ static struct cpudata *alloc_cpu(void)
 
 static void fill_in_cpu_info(struct cpudata *cpu)
 {
-	bind_cpu(cpu->number);
+//	bind_cpu(cpu->number);
 	estimate_MHz(cpu);
 	get_cpu_info_basics(cpu);	/* get vendor,family,model,stepping */
 	get_feature_flags(cpu);
@@ -248,6 +257,12 @@ int main(int argc, char **argv)
 	/* Tear down the linked list. */
 	cpu = firstcpu;
 	for (i = 0; i < nrCPUs; i++) {
+		if (cpu->info_url)
+			free(cpu->info_url);
+		if (cpu->datasheet_url)
+			free(cpu->datasheet_url);
+		if (cpu->errata_url)
+			free(cpu->errata_url);
 		tmp = cpu->next;
 		free(cpu);
 		cpu = tmp;

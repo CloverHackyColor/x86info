@@ -2,9 +2,14 @@ VERSION=$(shell date +%Y-%m-%d)
 
 CFLAGS = -DVERSION="$(VERSION)"
 
-CFLAGS += -Wall -W -g -O2 -D_FORTIFY_SOURCE=2 -I. -Iinclude
+ARCH=-arch x86_64
+# -arch x86_64 i386
+CFLAGS =  $(ARCH) -DVERSION="$(VERSION)"
+
+
+CFLAGS += -Wall -W -g -O2 -D_FORTIFY_SOURCE=2 -I. -Iinclude -L/opt/local/lib
 ifneq ($(SYSROOT),)
-CFLAGS += --sysroot=$(SYSROOT)
+CFLAGS += --sysroot=$(SYSROOT) -F/Library/Frameworks
 endif
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
@@ -18,7 +23,6 @@ CFLAGS += -Wstrict-prototypes -Wmissing-prototypes
 CFLAGS += -Wswitch-enum
 CFLAGS += -Wundef
 CFLAGS += -Wwrite-strings
-CFLAGS += $(shell pkg-config --cflags libpci)
 
 # gcc specific
 ifneq ($(shell $(CC) -v 2>&1 | grep -c "clang"), 1)
@@ -33,20 +37,25 @@ endif
 CPP_MAJOR := $(shell $(CPP) -dumpversion 2>&1 | cut -d'.' -f1)
 CPP_MINOR := $(shell $(CPP) -dumpversion 2>&1 | cut -d'.' -f2)
 DEVEL   := $(shell grep VERSION Makefile | head -n1 | grep pre | wc -l)
-CFLAGS  += $(shell if [ $(CPP_MAJOR) -eq 6 -a $(CPP_MINOR) -ge 3 -a $(DEVEL) -eq 1 ] ; then echo "-Werror"; else echo ""; fi)
+CFLAGS  += $(shell if [ $(CPP_MAJOR) -eq 4 -a $(CPP_MINOR) -ge 8 -a $(DEVEL) -eq 1 ] ; then echo "-Werror"; else echo ""; fi)
 
-LDFLAGS = -Wl,-z,relro,-z,now
-LDFLAGS += $(shell pkg-config --libs libpci)
+#LDFLAGS = -Wl,-z,relro,-z,now
+#LDFLAGS =$(ARCH) -lpci -lz -framework IOKit  -framework CoreFoundation -framework DirectHW -F/Library/Frameworks
+
+LDFLAGS =$(ARCH) -lpci -lz -framework IOKit  -framework CoreFoundation -framework DirectHW -F/Library/Frameworks
+
+#LDFLAGS = -Wl,-z,relro,-z,now
+#LDFLAGS += $(shell pkg-config --libs libpci)
 
 ifeq ($(CC),"")
 CC = gcc
 endif
 
-ifdef STATIC_LIBPCI
-LIBPCI = -Wl,-Bstatic -lpci -Wl,-Bdynamic -lz
-else
-LIBPCI = -lpci
-endif
+#ifdef STATIC_LIBPCI
+#LIBPCI = -Wl,-Bstatic -lpci -Wl,-Bdynamic -lz
+#else
+#LIBPCI = -lpci
+#endif
 
 SHELL = /bin/sh
 
@@ -68,8 +77,9 @@ X86INFO_OBJS = $(sort $(patsubst %.c,%.o,$(wildcard *.c))) \
 	$(sort $(patsubst %.c,%.o,$(wildcard vendors/*/*.c)))
 
 x86info: $(X86INFO_OBJS) $(X86INFO_HEADERS)
-	$(QUIET_CC)$(CC) $(CFLAGS) $(LDFLAGS) -o x86info $(X86INFO_OBJS) \
-	    $(LIBPCI)
+	$(QUIET_CC)$(CC) $(CFLAGS) $(LDFLAGS) -o x86info $(X86INFO_OBJS) 
+	#\
+	#    $(LIBPCI)
 
 DEPDIR= .deps
 -include $(X86INFO_SRC:%.c=$(DEPDIR)/%.d)
@@ -84,9 +94,9 @@ df = $(DEPDIR)/$(*D)/$(*F)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(df).d.tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d
 	@rm -f $(df).d.tmp
 
-tarball:
-	@git archive --format=tar --prefix=x86info-$(VERSION)/ HEAD > x86info-$(VERSION).tar
-	@xz -9 x86info-$(VERSION).tar
+#tarball:
+#	@git archive --format=tar --prefix=x86info-$(VERSION)/ HEAD > x86info-$(VERSION).tar
+#	@xz -9 x86info-$(VERSION).tar
 
 
 clean:
@@ -95,7 +105,7 @@ clean:
 	@rm -f x86info
 	@rm -f core.*
 	@rm -rf $(DEPDIR)/*
-	@rm -f x86info-coverity.tar.xz
+#	@rm -f x86info-coverity.tar.xz
 	@rm -rf cov-int
 
 sparse:
